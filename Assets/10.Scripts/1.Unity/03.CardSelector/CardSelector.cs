@@ -8,6 +8,7 @@ namespace Study.CardSelector
         public Card[] cards;
         public UnityEngine.Transform cursor;
         public int currentIndex = 2;
+
         void Update()
         {
             if(Keyboard.current.leftArrowKey.wasPressedThisFrame)
@@ -65,7 +66,6 @@ namespace Study.CardSelector
             // 최소값보다 작을경우 최대값으로
             if (currentIndex < 0) currentIndex = cards.Length - 1;
             if (currentIndex >= cards.Length) currentIndex = 0;
-
 
             float cardX = cards[currentIndex].transform.position.x;
             cursor.position = new Vector3(cardX, cursor.position.y);

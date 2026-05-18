@@ -30,10 +30,6 @@ namespace Study.PairMatchingGame
             SetState(State.Back);
         }
 
-        void Start()
-        {
-        }
-
         public void SetState(State state)
         {
             // 나의 현재 상태(myState)를 갱신한다

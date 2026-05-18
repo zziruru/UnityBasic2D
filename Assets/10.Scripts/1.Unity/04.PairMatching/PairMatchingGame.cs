@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -9,53 +10,50 @@ namespace Study.PairMatchingGame
         // Card Selector에 의해 선택된 두 카드를 비교합니다
         // 같으면 지우고, 다르면 뒤집습니다
         public CardSelector CardSelector;
+        public Transform[] rowRoots;
         // CardSelector가 갖고 있던 Card[]을 PairMatchingGame 객체가 관리하도록
         // 코드를 수정
-        public Card[] board; // 게임보드
+        private Card[,] board; // 게임보드
         public GameObject ClearTextObject;
+
+        private bool isChecking;
 
         private void Awake()
         {
-            int[] indexBuffer = new int[board.Length];
-            for(int i = 0; i< indexBuffer.Length; i++)
+            Card.Number[] numbers = new Card.Number[20];
+            int pointer = 0;
+            foreach(Card.Number number in System.Enum.GetValues(typeof(Card.Number)))
             {
-                // board 의 인덱스를 넣어준다.
-                indexBuffer[i] = i;
+                numbers[pointer++] = number;
+                numbers[pointer++] = number;
+            }
+            
+            for (int i = numbers.Length - 1; i > 0; i--)
+            {
+                int randomIndex = UnityEngine.Random.Range(0, i + 1);
+                Card.Number temp = numbers[i];
+                numbers[i] = numbers[randomIndex];
+                numbers[randomIndex] = temp;
             }
 
-            for (int i = indexBuffer.Length - 1; i > 0; i--)
+            board = new Card[4, 5];
+            for (int row = 0; row < rowRoots.Length; row++)
             {
-                int j = Random.Range(0, i + 1);
-                int temp = indexBuffer[i];
-                indexBuffer[i] = indexBuffer[j];
-                indexBuffer[j] = temp;
+                for (int col = 0; col < rowRoots[row].childCount; col++)
+                {
+                    Card card = rowRoots[row].GetChild(col).GetComponent<Card>();
+                    board[row, col] = card;
+                }
             }
 
-            // 계속 변화되는 배열에서 랜덤하게 가져오는거 없나
-            // (카드 갯수 / 2 )개 종류를 가져와서 
-            for (int i = 0; i < indexBuffer.Length; i++)
+            int pointer2 = 0;
+            for (int row = 0; row < board.GetLength(0); row++)
             {
-                //board[indexBuffer[i]] =
+                for (int col = 0; col < board.GetLength(1); col++)
+                {
+                    board[row, col].myNumber = numbers[pointer2++];
+                }
             }
-
-            //for (int i = 0; i < board.Length; i+=2)
-            //{
-            // Unity에서 랜덤을 사용하는 방법
-            // .Net의 랜덤을 사용해도 되긴 하다만, 더 편한 방법이 있음
-            //int randNum = Random.Range((int)Card.Number.Two, (int)Card.Number.Ace + 1);
-            // UnityEngine 의 Random을 사용해야함
-            // Random.Range(최소값, 최대값) : 최소값 ~ 최대값 범위 중 임의의 수를 반환함
-            // 주의! 최대값은 해당 범위에 포함되지 않음
-
-
-            //    board[i].myNumber = (Card.Number)randNum;
-            //    board[i + 1].myNumber = (Card.Number)randNum;
-            //}
-            // 셔플은 게임 오브젝트 연결해놓은게 다 섞이니까 커서 위치 이동이 이상해짐
-            // 카드를 섞으면 안되고 데이터를 섞어야함
-            // TODO: 차라리 Card.Number를 순서대로 돌고, 배당할 카드 인덱스를 랜덤하게 뽑기?
-            // 뽑았으면 제거도 해야함
-            // 셔플 돈 indexBuffer 를 이용해서 해도 됨
 
             CardSelector.SetBoard(board);
             ClearTextObject.SetActive(false);
@@ -65,23 +63,38 @@ namespace Study.PairMatchingGame
         // 조회해야 안전하게 작업을 할수 있다
         private void LateUpdate() 
         {
-            if (CardSelector.wasSelectionCompleted)
+            if (CardSelector.wasSelectionCompleted && !isChecking)
             {
-                Card[] selectedCards = CardSelector.GetSelectedCards();
-                bool isPair = CheckPair(selectedCards[0], selectedCards[1]);
-                if (isPair)
-                {
-                    DeleteCard(selectedCards[0]);
-                    DeleteCard(selectedCards[1]);
-
-                    pairMatchingCount += 2;
-                    CheckGameEnd();
-                }
-                else
-                    FlipCards(selectedCards[0], selectedCards[1]);
-
-                CardSelector.Clear();
+                StartCoroutine(CheckPairRoutine());
             }
+        }
+
+        private IEnumerator CheckPairRoutine()
+        {
+            CardSelector.canInput = false;
+            isChecking = true;
+            yield return new WaitForSeconds(0.7f);
+
+            Card[] selectedCards = CardSelector.GetSelectedCards();
+            Debug.Log($"selectedCards[0]: {selectedCards[0]}, selectedCards[1]: {selectedCards[1]}");
+            bool isPair = CheckPair(selectedCards[0], selectedCards[1]);
+
+            if (isPair)
+            {
+                DeleteCard(selectedCards[0]);
+                DeleteCard(selectedCards[1]);
+
+                pairMatchingCount += 2;
+                CheckGameEnd();
+            }
+            else
+            {
+                FlipCards(selectedCards[0], selectedCards[1]);
+            }
+
+            CardSelector.Clear();
+            isChecking = false;
+            CardSelector.canInput = true;
         }
 
         private bool CheckPair(Card a, Card b)
@@ -108,20 +121,21 @@ namespace Study.PairMatchingGame
             Debug.Log("두 카드가 다릅니다");
         }
 
-        // 객체를 안전하게 삭제하는 기능을 넣자
         private void DeleteCard(Card target)
         {
-            // 선형탐색을 이용해서 target의 위치를 찾는다
-            for (int i = 0; i<board.Length; i++)
+            for (int i = 0; i < board.GetLength(0); i++)
             {
-                if (board[i] == null) continue;
-
-                if (board[i].Equals(target)) // Equals(매개변수) 함수는 "==" 과 동일하다
+                for (int j = 0; j < board.GetLength(1); j++)
                 {
-                    board[i] = null; // null 할당을 해주지 않으면 쓰레기값을 가리킨다
-                    // 이제 해당 오브젝트가 삭제되면 Missing 이 아닌 None 이 뜨게 바뀐다
+                    if (board[i, j] == null) continue;
 
-                    Destroy(target.gameObject); // Scene에서 삭제
+                    if (board[i, j].Equals(target)) // Equals(매개변수) 함수는 "==" 과 동일하다
+                    {
+                        board[i, j] = null; // null 할당을 해주지 않으면 쓰레기값을 가리킨다
+                        // 이제 해당 오브젝트가 삭제되면 Missing 이 아닌 None 이 뜨게 바뀐다
+
+                        Destroy(target.gameObject); // Scene에서 삭제
+                    }
                 }
             }
         }
@@ -132,7 +146,7 @@ namespace Study.PairMatchingGame
 
         private bool CheckGameEnd()
         {
-            bool isEnd = pairMatchingCount == board.Length;
+            bool isEnd = pairMatchingCount == (board.GetLength(0) * board.GetLength(1));
 
             // ~.SetActive(bool 매개변수)
             // 해당 게임오브젝트의 활성화/비활성화를 제어하는 함수
