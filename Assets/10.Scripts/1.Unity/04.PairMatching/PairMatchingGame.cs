@@ -81,11 +81,15 @@ namespace Study.PairMatchingGame
 
             if (isPair)
             {
+                // 삭제 후 이동될 위치 계산 용
+                Vector3 cursorBasePosition = selectedCards[1].transform.position;
+
                 DeleteCard(selectedCards[0]);
                 DeleteCard(selectedCards[1]);
 
                 pairMatchingCount += 2;
                 CheckGameEnd();
+                CardSelector.MoveCursorToNearestAliveCardFrom(cursorBasePosition);
             }
             else
             {

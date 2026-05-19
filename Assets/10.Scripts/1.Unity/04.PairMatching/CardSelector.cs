@@ -49,19 +49,19 @@ namespace Study.PairMatchingGame
 
             if (Keyboard.current.leftArrowKey.wasPressedThisFrame)
             {
-                MoveCursor(Direction.Left);
+                FindNearestCard(Direction.Left);
             }
             else if (Keyboard.current.rightArrowKey.wasPressedThisFrame)
             {
-                MoveCursor(Direction.Right);
+                FindNearestCard(Direction.Right);
             }
             else if (Keyboard.current.upArrowKey.wasPressedThisFrame)
             {
-                MoveCursor(Direction.Up);
+                FindNearestCard(Direction.Up);
             }
             else if (Keyboard.current.downArrowKey.wasPressedThisFrame)
             {
-                MoveCursor(Direction.Down);
+                FindNearestCard(Direction.Down);
             }
 
             if (Keyboard.current.spaceKey.wasPressedThisFrame)
@@ -106,88 +106,106 @@ namespace Study.PairMatchingGame
             selectedCardB = null;
         }
 
-        // cards 배열에 존재하지 않는 개체를 건너뛰어야함
-        // currentIndex 를 적용하기 전에 해당 배열이 null 인지 체크
-        private void MoveCursorVertically(bool isUp)
+        private void FindNearestCard(Direction direction)
         {
-            // temp 라는 임시변수에 미리 더해봅시다
-            int temp = currentRowIndex;
+            Card currentCard = cards[currentRowIndex, currentColumnIndex];
 
-            for (int i = 0; i < cards.GetLength(0); i++)
+            Card nearestCard = null;
+            int nearestRow = currentRowIndex;
+            int nearestColumn = currentColumnIndex;
+            float nearestDistance = float.MaxValue;
+
+            Vector3 currentPosition = currentCard.transform.position;
+
+            for (int row = 0; row < cards.GetLength(0); row++)
             {
-                temp += isUp ? -1 : +1;
-
-                if (temp < 0) temp = cards.GetLength(0) - 1;
-                if (temp >= cards.GetLength(0)) temp = 0;
-
-                if (cards[temp, currentColumnIndex] == null)
+                for (int col = 0; col < cards.GetLength(1); col++)
                 {
-                    continue;
-                } else
-                {
-                    currentRowIndex = temp;
-                    float cardX = cards[currentRowIndex, currentColumnIndex].transform.position.x;
-                    float cardY = cards[currentRowIndex, currentColumnIndex].transform.position.y - cursorYOffset;
-                    cursor.position = new Vector3(cardX, cardY);
-                    return;
+                    Card candidate = cards[row, col];
+
+                    if (candidate == null || candidate == currentCard)
+                        continue;
+
+                    Vector3 diff = candidate.transform.position - currentPosition;
+
+                    // 가려는 방향과 반대에 있는것은 후보군에서 제외
+                    if (direction == Direction.Up && diff.y <= 0) continue;
+                    if (direction == Direction.Down && diff.y >= 0) continue;
+                    if (direction == Direction.Left && diff.x >= 0) continue;
+                    if (direction == Direction.Right && diff.x <= 0) continue;
+
+                    float distance = diff.sqrMagnitude;
+
+                    if (distance < nearestDistance)
+                    {
+                        nearestDistance = distance;
+                        nearestCard = candidate;
+                        nearestRow = row;
+                        nearestColumn = col;
+                    }
                 }
             }
 
-            currentRowIndex = -1;
+            if (nearestCard == null)
+            {
+                return;
+            }
+
+            currentRowIndex = nearestRow;
+            currentColumnIndex = nearestColumn;
+
+            MoveCursorToCurrentCard();
         }
 
-        private void MoveCursorHorizontally(bool isLeft)
+        private void MoveCursorToCurrentCard()
         {
-            int temp = currentColumnIndex;
+            Card currentCard = cards[currentRowIndex, currentColumnIndex];
 
-            for (int i = 0; i < cards.GetLength(1); i++)
+            float cardX = currentCard.transform.position.x;
+            float cardY = currentCard.transform.position.y - cursorYOffset;
+
+            cursor.position = new Vector3(cardX, cardY);
+        }
+
+        public void MoveCursorToNearestAliveCardFrom(Vector3 basePosition)
+        {
+            Card nearestCard = null;
+            int nearestRow = -1;
+            int nearestColumn = -1;
+            float nearestDistance = float.MaxValue;
+
+            for (int row = 0; row < cards.GetLength(0); row++)
             {
-                temp += isLeft ? -1 : +1;
-
-                if (temp < 0) temp = cards.GetLength(1) - 1;
-                if (temp >= cards.GetLength(1)) temp = 0;
-
-                if (cards[currentRowIndex, temp] == null)
+                for (int col = 0; col < cards.GetLength(1); col++)
                 {
-                    continue;
-                } else
-                {
-                    currentColumnIndex = temp;
-                    float cardX = cards[currentRowIndex, currentColumnIndex].transform.position.x;
-                    float cardY = cards[currentRowIndex, currentColumnIndex].transform.position.y - cursorYOffset;
-                    cursor.position = new Vector3(cardX, cardY);
-                    return;
+                    Card candidate = cards[row, col];
+
+                    if (candidate == null)
+                        continue;
+
+                    Vector3 diff = candidate.transform.position - basePosition;
+                    float distance = diff.sqrMagnitude;
+
+                    if (distance < nearestDistance)
+                    {
+                        nearestDistance = distance;
+                        nearestCard = candidate;
+                        nearestRow = row;
+                        nearestColumn = col;
+                    }
                 }
             }
 
-            currentColumnIndex = -1;
-        }
-
-        // 함수 오버로딩
-        // - 같은 이름의 함수더라도, 사용하는 매개변수가 다르다면
-        // 중복정의가 가능함
-        // (반환자료형-함수이름-매개변수) => 함수의 시그니처
-        // 함수의 시그니처가 다르면 다르다고 인식함
-        private void MoveCursor(Direction direction)
-        {
-            switch(direction)
+            if (nearestCard == null)
             {
-                case Direction.Up:
-                    MoveCursorVertically(true);
-                    break;
-
-                case Direction.Down:
-                    MoveCursorVertically(false);
-                    break;
-
-                case Direction.Left:
-                    MoveCursorHorizontally(true);
-                    break;
-
-                case Direction.Right:
-                    MoveCursorHorizontally(false);
-                    break;
+                cursor.gameObject.SetActive(false);
+                return;
             }
+
+            currentRowIndex = nearestRow;
+            currentColumnIndex = nearestColumn;
+
+            MoveCursorToCurrentCard();
         }
     }
 }
