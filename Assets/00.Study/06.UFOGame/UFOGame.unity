@@ -199,7 +199,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Study.LayerAndScroll.ScrollController
   speed: 3
   direction: 0
-  moveDirection: {x: -1, y: 0, z: 0}
   layerPrefabs:
   - {fileID: 6785203039302473904, guid: 0d3c76a8ef239164ab5234b87982a490, type: 3}
   startLayer: {fileID: 546952827}
@@ -519,7 +518,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Study.LayerAndScroll.ScrollController
   speed: 1
   direction: 3
-  moveDirection: {x: 0, y: -1, z: 0}
   layerPrefabs:
   - {fileID: 1140529930}
   startLayer: {fileID: 1140529930}
@@ -633,7 +631,7 @@ SpriteRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  - {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -688,7 +686,7 @@ BoxCollider2D:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2023403678}
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 3
   m_Density: 1
   m_Material: {fileID: 0}
@@ -742,7 +740,7 @@ Rigidbody2D:
   m_Mass: 1
   m_LinearDamping: 0
   m_AngularDamping: 0.05
-  m_GravityScale: 1
+  m_GravityScale: 0
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
@@ -766,6 +764,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 05cb8dfea1df82d4cb509b5e9bd45185, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UFOController
+  Speed: 5
   CoinCount: 0
 --- !u!1001 &6612580016607537639
 PrefabInstance:
